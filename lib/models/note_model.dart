@@ -36,4 +36,18 @@ class Note {
         return '📌';
     }
   }
+
+  Note copyWith({
+    String? title,
+    String? content,
+    Category? category,
+  }) {
+    return Note(
+      id: id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      category: category ?? this.category,
+      createdAt: createdAt,
+    );
+  }
 }

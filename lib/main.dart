@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'note_model.dart';
+import 'models/note_model.dart';
 import 'note_card.dart';
 import 'note_detail_page.dart';
+import 'data/notes_repository.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,13 +33,28 @@ class NotesHomePage extends StatefulWidget {
 }
 
 class _NotesHomePageState extends State<NotesHomePage> {
-  final List<Note> _notes = [];
-  Category? _activeFilter;
-  String _searchQuery = '';
+  final NotesRepository _repo = NotesRepository.instance;
+  Category? _activeFilter;  String _searchQuery = '';
   bool _isSearching = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _repo.addListener(_onRepoChanged);
+  }
+
+  @override
+  void dispose() {
+    _repo.removeListener(_onRepoChanged);
+    super.dispose();
+  }
+
+  void _onRepoChanged() {
+    if (mounted) setState(() {});
+  }
+
   List<Note> get _filteredNotes {
-    List<Note> result = _notes;
+    List<Note> result = _repo.notes;
     if (_activeFilter != null) {
       result = result.where((n) => n.category == _activeFilter).toList();
     }
@@ -52,7 +68,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
   }
 
   int _countByCategory(Category cat) =>
-      _notes.where((n) => n.category == cat).length;
+      _repo.notes.where((n) => n.category == cat).length;
 
   void _showAddNoteSheet() {
     final titleCtrl = TextEditingController();
@@ -152,25 +168,16 @@ class _NotesHomePageState extends State<NotesHomePage> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              if (formKey.currentState!.validate()) {
-                                setState(() {
-                                  _notes.insert(
-                                    0,
-                                    Note(
-                                      id: DateTime.now()
-                                          .millisecondsSinceEpoch
-                                          .toString(),
-                                      title: titleCtrl.text.trim(),
-                                      content: contentCtrl.text.trim(),
-                                      category: selectedCategory,
-                                      createdAt: DateTime.now(),
-                                    ),
-                                  );
-                                });
-                                Navigator.pop(ctx);
-                                _showSnackBar('Catatan berhasil ditambahkan');
-                              }
-                            },
+                      if (formKey.currentState!.validate()) {
+                        _repo.addNote(
+                          title: titleCtrl.text.trim(),
+                          content: contentCtrl.text.trim(),
+                          category: selectedCategory,
+                        );
+                        Navigator.pop(ctx);
+                        _showSnackBar('Catatan berhasil ditambahkan');
+                      }
+                    },
                             child: const Text('Simpan'),
                           ),
                         ),
